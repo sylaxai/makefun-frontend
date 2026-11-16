@@ -52,7 +52,19 @@ export async function get(path) {
   const headers = {};
   if (hit && hit.etag) headers['If-None-Match'] = hit.etag;
   stats.requests += 1;
-  const res = await fetch(API + path, { headers });
+  let res;
+  try {
+    res = await fetch(API + path, { headers });
+  } catch (err) {
+    // The API's 304 answers carry no CORS header, so a revalidation the
+    // browser blocks is retried once as a plain GET for a fresh 200.
+    if (hit && hit.etag) {
+      stats.requests += 1;
+      res = await fetch(API + path);
+    } else {
+      throw err;
+    }
+  }
   if (res.status === 304 && hit) {
     stats.revalidated += 1;
     return hit.body;
@@ -82,7 +94,11 @@ export const getLeaderboard = (slug, phase = 'dev', view = 'overall') =>
 export const getProfile = (handle) => get(`/profiles/${encodeURIComponent(handle)}`);
 
 /** An API-provided relative URL (avatar, bounty page) on make.fun itself. */
-export const siteUrl = (path) => (path ? SITE + path : SITE);
+export const siteUrl = (path) => {
+  if (!path) return SITE;
+  if (/^https?:\/\//.test(path)) return path;
+  return SITE + path;
+};
 
 /** The full URL of an API-provided image (avatar, share card). */
 export const apiImage = (path) => siteUrl(path);

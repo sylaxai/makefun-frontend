@@ -125,6 +125,10 @@ export function board(data, ui) {
   const items = data.items || [];
   const rows = boardRows(items, ui);
   const totalPot = items.reduce((sum, b) => sum + Number(b.potUsd ?? b.rewardAmount ?? 0), 0);
+  const shown =
+    ui.filter === 'all'
+      ? `${num(rows.length)} listed`
+      : `${num(rows.length)} taking entries of ${num(items.length)} listed`;
   const cards = rows
     .map(
       (b) => `
@@ -148,7 +152,7 @@ export function board(data, ui) {
     .join('');
   return `
     <h1>Live bounties</h1>
-    <p class="lede">${num(items.length)} open · ${money(totalPot)} in live pots · updated from make.fun's public API</p>
+    <p class="lede">${shown} · ${money(totalPot)} in live pots · updated from make.fun's public API</p>
     <form class="controls" id="board-controls">
       <label>Show
         <select name="filter" data-board="filter">
